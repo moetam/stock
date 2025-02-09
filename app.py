@@ -8,11 +8,11 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数
+# 📌 グラフ生成関数（最適化）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
-    # 株価データ取得
+    # 株価データ取得（最適化）
     stock = yf.Ticker(ticker)
-    df = stock.history(period=period, interval=interval)
+    df = stock.history(period=period, interval=interval, auto_adjust=True, progress=False)
 
     # 高値・安値・終値データを四捨五入
     df["High"] = (df["High"] / tick_size).round() * tick_size
@@ -39,7 +39,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
     max_resistance_prices = resistance_df[resistance_df["Bounce_Count"] == max_resistance_count]["Price"].tolist()
 
-    # **グラフ作成**
+    # **グラフ作成（最適化）**
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
     # 📌 支持線のグラフ
@@ -48,8 +48,12 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Support Levels Bounce Count")
-    ax.set_xticks(support_levels[::20])
-    ax.set_xticklabels(support_levels[::20], rotation=90)
+
+    # **X軸の目盛りを最適化**
+    step = max(len(support_levels) // 10, 1)
+    ax.set_xticks(support_levels[::step])
+    ax.set_xticklabels(support_levels[::step], rotation=90)
+
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
     ax.text(support_df["Price"].min(), max_support_count, f"Max: {max_support_count}\n" + "\n".join(map(str, max_support_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
@@ -60,8 +64,12 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Resistance Levels Bounce Count")
-    ax.set_xticks(resistance_levels[::20])
-    ax.set_xticklabels(resistance_levels[::20], rotation=90)
+
+    # **X軸の目盛りを最適化**
+    step = max(len(resistance_levels) // 10, 1)
+    ax.set_xticks(resistance_levels[::step])
+    ax.set_xticklabels(resistance_levels[::step], rotation=90)
+
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
     ax.text(resistance_df["Price"].min(), max_resistance_count, f"Max: {max_resistance_count}\n" + "\n".join(map(str, max_resistance_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
