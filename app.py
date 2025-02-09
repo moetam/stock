@@ -8,7 +8,7 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数（元のコードのまま）
+# 📌 グラフ生成関数（plt のまま）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
     # 株価データ取得
     stock = yf.Ticker(ticker)
@@ -48,8 +48,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.xlabel("Price Level (JPY)")
     plt.ylabel("Bounce_Count")
     plt.title("Support Levels Bounce Count")
-    plt.xticks(rotation=90)
-    plt.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))
+    plt.xticks(rotation=90)  # 修正
+    plt.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))  # 修正
     plt.grid(axis="y", linestyle="--", alpha=0.7)
     text = f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices))
     plt.text(support_df["Price"].min() + 0.5, max_support_count + .5, text, fontsize=12, verticalalignment='top')
@@ -60,8 +60,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.xlabel("Price Level (JPY)")
     plt.ylabel("Bounce_Count")
     plt.title("Resistance Levels Bounce Count")
-    plt.xticks(rotation=90)
-    plt.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))
+    plt.xticks(rotation=90)  # 修正
+    plt.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))  # 修正
     plt.grid(axis="y", linestyle="--", alpha=0.7)
     text = f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices))
     plt.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, text, fontsize=12, verticalalignment='top')
