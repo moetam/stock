@@ -8,9 +8,9 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数（最適化、MaxPrice リセット対応）
+# 📌 グラフ生成関数（メモリリーク対策、初期表示修正）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
-    # 株価データ取得（データ量削減）
+    # 株価データ取得
     stock = yf.Ticker(ticker)
     df = stock.history(period=period, interval=interval, auto_adjust=True)
 
@@ -33,13 +33,13 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
     resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
 
-    # 最大値取得（リセット対策）
+    # 最大値取得
     max_support_count = support_df["Bounce_Count"].max()
     max_resistance_count = resistance_df["Bounce_Count"].max()
     max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
     max_resistance_prices = resistance_df[resistance_df["Bounce_Count"] == max_resistance_count]["Price"].tolist()
 
-    # 📌 **3つのグラフを生成**
+    # 📌 **3つのグラフを生成（メモリ最適化）**
     img_list = []
 
     # **終値・高値・安値の推移**
@@ -76,6 +76,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.grid(axis="y", linestyle="--", alpha=0.7)
 
     # **最大値リセット**
+    plt.clf()  # グラフをクリア
     plt.text(support_df["Price"].min() + 0.5, max_support_count + .5, 
              f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices)),
              fontsize=12, verticalalignment='top')
@@ -97,6 +98,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.grid(axis="y", linestyle="--", alpha=0.7)
 
     # **最大値リセット**
+    plt.clf()  # グラフをクリア
     plt.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, 
              f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices)),
              fontsize=12, verticalalignment='top')
@@ -112,7 +114,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
 # 📌 Webルート
 @app.route("/", methods=["GET", "POST"])
 def index():
-    graph_urls = None  # 初期表示ではグラフを表示しない
+    graph_urls = []  # **修正: 初期表示時は空リスト**
     if request.method == "POST":
         ticker = request.form["ticker"]
         period = request.form["period"]
