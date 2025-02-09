@@ -12,7 +12,7 @@ app = Flask(__name__)
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
     # 株価データ取得（最適化）
     stock = yf.Ticker(ticker)
-    df = stock.history(period=period, interval=interval, auto_adjust=True, progress=False)
+    df = stock.history(period=period, interval=interval, auto_adjust=True)
 
     # 高値・安値・終値データを四捨五入
     df["High"] = (df["High"] / tick_size).round() * tick_size
