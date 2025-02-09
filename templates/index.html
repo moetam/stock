@@ -18,9 +18,8 @@
         <button type="submit">実行</button>
     </form>
 
-    {% if graph_url %}
-        <h2>分析結果</h2>
-        <img src="data:image/png;base64,{{ graph_url }}">
-    {% endif %}
+    {% for graph_url in graph_urls %}
+        <img src="data:image/png;base64,{{ graph_url }}"><br>
+    {% endfor %}
 </body>
 </html>
