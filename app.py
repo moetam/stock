@@ -8,11 +8,11 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数（元の `plt` のまま、3つのグラフを維持）
+# 📌 グラフ生成関数（最適化、MaxPrice リセット対応）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
-    # 株価データ取得
+    # 株価データ取得（データ量削減）
     stock = yf.Ticker(ticker)
-    df = stock.history(period=period, interval=interval)
+    df = stock.history(period=period, interval=interval, auto_adjust=True)
 
     # 高値・安値・終値データを四捨五入
     df["High"] = (df["High"] / tick_size).round() * tick_size
@@ -33,7 +33,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
     resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
 
-    # 最大値取得
+    # 最大値取得（リセット対策）
     max_support_count = support_df["Bounce_Count"].max()
     max_resistance_count = resistance_df["Bounce_Count"].max()
     max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
@@ -63,6 +63,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.savefig(img, format="png")
     img.seek(0)
     img_list.append(base64.b64encode(img.getvalue()).decode())
+    plt.close()  # メモリ解放
 
     # **支持線の反発回数グラフ**
     plt.figure(figsize=(10, 4))
@@ -73,13 +74,17 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.xticks(rotation=90)
     plt.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))
     plt.grid(axis="y", linestyle="--", alpha=0.7)
-    text = f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices))
-    plt.text(support_df["Price"].min() + 0.5, max_support_count + .5, text, fontsize=12, verticalalignment='top')
+
+    # **最大値リセット**
+    plt.text(support_df["Price"].min() + 0.5, max_support_count + .5, 
+             f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices)),
+             fontsize=12, verticalalignment='top')
 
     img = io.BytesIO()
     plt.savefig(img, format="png")
     img.seek(0)
     img_list.append(base64.b64encode(img.getvalue()).decode())
+    plt.close()  # メモリ解放
 
     # **抵抗線の反発回数グラフ**
     plt.figure(figsize=(10, 4))
@@ -90,20 +95,24 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     plt.xticks(rotation=90)
     plt.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))
     plt.grid(axis="y", linestyle="--", alpha=0.7)
-    text = f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices))
-    plt.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, text, fontsize=12, verticalalignment='top')
+
+    # **最大値リセット**
+    plt.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, 
+             f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices)),
+             fontsize=12, verticalalignment='top')
 
     img = io.BytesIO()
     plt.savefig(img, format="png")
     img.seek(0)
     img_list.append(base64.b64encode(img.getvalue()).decode())
+    plt.close()  # メモリ解放
 
     return img_list
 
 # 📌 Webルート
 @app.route("/", methods=["GET", "POST"])
 def index():
-    graph_urls = []
+    graph_urls = None  # 初期表示ではグラフを表示しない
     if request.method == "POST":
         ticker = request.form["ticker"]
         period = request.form["period"]
