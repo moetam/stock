@@ -8,7 +8,7 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数（現在のコードの描画方法を変更せずにそのまま使用）
+# 📌 グラフ生成関数（元のコードのまま）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
     # 株価データ取得
     stock = yf.Ticker(ticker)
@@ -39,32 +39,32 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
     max_resistance_prices = resistance_df[resistance_df["Bounce_Count"] == max_resistance_count]["Price"].tolist()
 
-    # 📌 グラフ作成（ユーザーのコードをそのまま使用）
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+    # 📌 **グラフ生成（plt のまま）**
+    plt.figure(figsize=(10, 8))
 
     # **支持線の反発回数グラフ**
-    ax = axes[0]
-    ax.bar(support_df["Price"], support_df["Bounce_Count"], width=tick_size, color="green", alpha=0.7)
-    ax.set_xlabel("Price Level (JPY)")
-    ax.set_ylabel("Bounce_Count")
-    ax.set_title("Support Levels Bounce Count")
-    ax.xticks(rotation=90)
-    ax.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    plt.subplot(2, 1, 1)
+    plt.bar(support_df["Price"], support_df["Bounce_Count"], width=tick_size, color="green", alpha=0.7)
+    plt.xlabel("Price Level (JPY)")
+    plt.ylabel("Bounce_Count")
+    plt.title("Support Levels Bounce Count")
+    plt.xticks(rotation=90)
+    plt.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
     text = f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices))
-    ax.text(support_df["Price"].min() + 0.5, max_support_count + .5, text, fontsize=12, verticalalignment='top')
+    plt.text(support_df["Price"].min() + 0.5, max_support_count + .5, text, fontsize=12, verticalalignment='top')
 
     # **抵抗線の反発回数グラフ**
-    ax = axes[1]
-    ax.bar(resistance_df["Price"], resistance_df["Bounce_Count"], width=tick_size, color="red", alpha=0.7)
-    ax.set_xlabel("Price Level (JPY)")
-    ax.set_ylabel("Bounce_Count")
-    ax.set_title("Resistance Levels Bounce Count")
-    ax.xticks(rotation=90)
-    ax.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    plt.subplot(2, 1, 2)
+    plt.bar(resistance_df["Price"], resistance_df["Bounce_Count"], width=tick_size, color="red", alpha=0.7)
+    plt.xlabel("Price Level (JPY)")
+    plt.ylabel("Bounce_Count")
+    plt.title("Resistance Levels Bounce Count")
+    plt.xticks(rotation=90)
+    plt.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
     text = f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices))
-    ax.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, text, fontsize=12, verticalalignment='top')
+    plt.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, text, fontsize=12, verticalalignment='top')
 
     # **画像を base64 でエンコード**
     img = io.BytesIO()
