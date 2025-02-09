@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>株価反発分析</title>
+</head>
+<body>
+    <h1>株価反発分析ツール</h1>
+    <form method="POST">
+        <label>銘柄コード: <input type="text" name="ticker" value="3436.T"></label><br>
+        <label>期間: <input type="text" name="period" value="5y"></label><br>
+        <label>時間軸: <input type="text" name="interval" value="1wk"></label><br>
+        <label>支持線: <input type="text" name="support_min" value="1700"> 〜 <input type="text" name="support_max" value="2000"></label><br>
+        <label>抵抗線: <input type="text" name="resistance_min" value="2600"> 〜 <input type="text" name="resistance_max" value="2986"></label><br>
+        <label>呼値: <input type="text" name="tick_size" value="0.5"></label><br>
+        <label>閾値: <input type="text" name="threshold" value="15"></label><br>
+        <button type="submit">実行</button>
+    </form>
+
+    {% if graph_url %}
+        <h2>分析結果</h2>
+        <img src="data:image/png;base64,{{ graph_url }}">
+    {% endif %}
+</body>
+</html>
