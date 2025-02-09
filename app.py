@@ -8,7 +8,7 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数
+# 📌 グラフ生成関数（現在のコードの描画方法を変更せずにそのまま使用）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
     # 株価データ取得
     stock = yf.Ticker(ticker)
@@ -21,7 +21,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     df["is_bullish"] = df["Close"] > df["Open"]
     df["is_bearish"] = df["Close"] < df["Open"]
 
-    # 価格リスト
+    # 指定範囲の価格リスト
     support_levels = np.arange(support_range[0], support_range[1] + tick_size, tick_size)
     resistance_levels = np.arange(resistance_range[0], resistance_range[1] + tick_size, tick_size)
 
@@ -39,34 +39,34 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
     max_resistance_prices = resistance_df[resistance_df["Bounce_Count"] == max_resistance_count]["Price"].tolist()
 
-    # **グラフ作成**
+    # 📌 グラフ作成（ユーザーのコードをそのまま使用）
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-    # 📌 支持線のグラフ
+    # **支持線の反発回数グラフ**
     ax = axes[0]
     ax.bar(support_df["Price"], support_df["Bounce_Count"], width=tick_size, color="green", alpha=0.7)
     ax.set_xlabel("Price Level (JPY)")
-    ax.set_ylabel("Bounce Count")
+    ax.set_ylabel("Bounce_Count")
     ax.set_title("Support Levels Bounce Count")
-    ax.set_xticks(support_df["Price"][::10])
-    ax.set_xticklabels(support_df["Price"][::10], rotation=90)
+    ax.xticks(rotation=90)
+    ax.yticks(np.arange(0, support_df["Bounce_Count"].max() + 2, 1))
     ax.grid(axis="y", linestyle="--", alpha=0.7)
-    ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
-    ax.text(support_df["Price"].min(), max_support_count, f"Max: {max_support_count}\n" + "\n".join(map(str, max_support_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
+    text = f"Max Bounce Count: {max_support_count}\nMax Prices: " + ", ".join(map(str, max_support_prices))
+    ax.text(support_df["Price"].min() + 0.5, max_support_count + .5, text, fontsize=12, verticalalignment='top')
 
-    # 📌 抵抗線のグラフ
+    # **抵抗線の反発回数グラフ**
     ax = axes[1]
     ax.bar(resistance_df["Price"], resistance_df["Bounce_Count"], width=tick_size, color="red", alpha=0.7)
     ax.set_xlabel("Price Level (JPY)")
-    ax.set_ylabel("Bounce Count")
+    ax.set_ylabel("Bounce_Count")
     ax.set_title("Resistance Levels Bounce Count")
-    ax.set_xticks(resistance_df["Price"][::10])
-    ax.set_xticklabels(resistance_df["Price"][::10], rotation=90)
+    ax.xticks(rotation=90)
+    ax.yticks(np.arange(0, resistance_df["Bounce_Count"].max() + 2, 1))
     ax.grid(axis="y", linestyle="--", alpha=0.7)
-    ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
-    ax.text(resistance_df["Price"].min(), max_resistance_count, f"Max: {max_resistance_count}\n" + "\n".join(map(str, max_resistance_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
+    text = f"Max Bounce Count: {max_resistance_count}\nMax Prices: " + ", ".join(map(str, max_resistance_prices))
+    ax.text(resistance_df["Price"].min() + 0.5, max_resistance_count + .5, text, fontsize=12, verticalalignment='top')
 
-    # 画像をbase64エンコード
+    # **画像を base64 でエンコード**
     img = io.BytesIO()
     plt.tight_layout()
     plt.savefig(img, format="png")
