@@ -7,77 +7,81 @@ import io
 import base64
 
 app = Flask(__name__)
+try:
+    # 📌 グラフ生成関数（支持線・抵抗線を別々にする）
+    def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
+        # 株価データ取得
+        stock = yf.Ticker(ticker)
+        df = stock.history(period=period, interval=interval, auto_adjust=True)
 
-# 📌 グラフ生成関数（支持線・抵抗線を別々にする）
-def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
-    # 株価データ取得
-    stock = yf.Ticker(ticker)
-    df = stock.history(period=period, interval=interval, auto_adjust=True)
+        # 高値・安値・終値データを四捨五入
+        df["High"] = (df["High"] / tick_size).round() * tick_size
+        df["Low"] = (df["Low"] / tick_size).round() * tick_size
+        df["Close"] = (df["Close"] / tick_size).round() * tick_size
+        df["is_bullish"] = (df["Close"] - threshold)> df["Open"]
+        df["is_bearish"] = (df["Close"] + threshold) < df["Open"]
 
-    # 高値・安値・終値データを四捨五入
-    df["High"] = (df["High"] / tick_size).round() * tick_size
-    df["Low"] = (df["Low"] / tick_size).round() * tick_size
-    df["Close"] = (df["Close"] / tick_size).round() * tick_size
-    df["is_bullish"] = (df["Close"] - threshold)> df["Open"]
-    df["is_bearish"] = (df["Close"] + threshold) < df["Open"]
+        #閾値内を除外
+        df["bullish_High"] = np.where(df["is_bullish"] == True, df["High"], 0)
+        df["bearish_Low"] = np.where(df["is_bearish"] == True, df["Low"], 0)
 
-    #閾値内を除外
-    df["bullish_High"] = np.where(df["is_bullish"] == True, df["High"], 0)
-    df["bearish_Low"] = np.where(df["is_bearish"] == True, df["Low"], 0)
+        # 価格リスト
+        support_levels = np.arange(support_range[0], support_range[1] + tick_size, tick_size)
+        resistance_levels = np.arange(resistance_range[0], resistance_range[1] + tick_size, tick_size)
 
-    # 価格リスト
-    support_levels = np.arange(support_range[0], support_range[1] + tick_size, tick_size)
-    resistance_levels = np.arange(resistance_range[0], resistance_range[1] + tick_size, tick_size)
+        # 反発回数をカウント
+        support_counts = {level: (df["bearish_Low"] == level).sum() for level in support_levels}
+        resistance_counts = {level: (df["bullish_High"] == level).sum() for level in resistance_levels}
 
-    # 反発回数をカウント
-    support_counts = {level: (df["bearish_Low"] == level).sum() for level in support_levels}
-    resistance_counts = {level: (df["bullish_High"] == level).sum() for level in resistance_levels}
+        #x軸
+        step = 50
+        support_xticks = support_levels[::step]
+        resistance_xticks = resistance_levels[::step]
 
-    #x軸
-    step = 50
-    support_xticks = support_levels[::step]
-    resistance_xticks = resistance_levels[::step]
+        # データフレーム化
+        support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
+        resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
 
-    # データフレーム化
-    support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
-    resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
+        # **ランキングデータ取得**
+        top5_support_counts = support_df["Bounce_Count"].unique()[:5]
+        top5_resistance_counts = resistance_df["Bounce_Count"].unique()[:5]
 
-    # **ランキングデータ取得**
-    top5_support_counts = support_df["Bounce_Count"].unique()[:5]
-    top5_resistance_counts = resistance_df["Bounce_Count"].unique()[:5]
+        support_ranking = [{"count": count, "prices": support_df[support_df["Bounce_Count"] == count]["Price"].tolist()} for count in top5_support_counts]
+        resistance_ranking = [{"count": count, "prices": resistance_df[resistance_df["Bounce_Count"] == count]["Price"].tolist()} for count in top5_resistance_counts]
 
-    support_ranking = [{"count": count, "prices": support_df[support_df["Bounce_Count"] == count]["Price"].tolist()} for count in top5_support_counts]
-    resistance_ranking = [{"count": count, "prices": resistance_df[resistance_df["Bounce_Count"] == count]["Price"].tolist()} for count in top5_resistance_counts]
+        # **グラフ生成関数（共通処理）**
+        def create_graph(df, color, title, xticks):
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.bar(df["Price"], df["Bounce_Count"], width=0.5, color=color, alpha=0.7)
+            ax.set_xlabel("Price Level (JPY)")
+            ax.set_ylabel("Bounce Count")
+            ax.set_title(title)
 
-    # **グラフ生成関数（共通処理）**
-    def create_graph(df, color, title, xticks):
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Price"], df["Bounce_Count"], width=0.5, color=color, alpha=0.7)
-        ax.set_xlabel("Price Level (JPY)")
-        ax.set_ylabel("Bounce Count")
-        ax.set_title(title)
+            ax.set_xticks(xticks)
+            ax.set_xticklabels(xticks, rotation=90)
 
-        ax.set_xticks(xticks)
-        ax.set_xticklabels(xticks, rotation=90)
+            ax.grid(axis="y", linestyle="--", alpha=0.7)
+            ax.set_yticks(np.arange(0, max(df["Bounce_Count"].max(), 1) + 1, 1))
 
-        ax.grid(axis="y", linestyle="--", alpha=0.7)
-        ax.set_yticks(np.arange(0, max(df["Bounce_Count"].max(), 1) + 1, 1))
+            # 画像をbase64エンコード
+            img = io.BytesIO()
+            plt.tight_layout()
+            plt.savefig(img, format="png")
+            img.seek(0)
+            graph_url = base64.b64encode(img.getvalue()).decode()
+            plt.close(fig)
 
-        # 画像をbase64エンコード
-        img = io.BytesIO()
-        plt.tight_layout()
-        plt.savefig(img, format="png")
-        img.seek(0)
-        graph_url = base64.b64encode(img.getvalue()).decode()
-        plt.close(fig)
+            return graph_url
 
-        return graph_url
+        # 📌 個別のグラフを生成
+        support_graph_url = create_graph(support_df, "green", "Support Levels Bounce Count", support_xticks)
+        resistance_graph_url = create_graph(resistance_df, "red", "Resistance Levels Bounce Count", resistance_xticks)
 
-    # 📌 個別のグラフを生成
-    support_graph_url = create_graph(support_df, "green", "Support Levels Bounce Count", support_xticks)
-    resistance_graph_url = create_graph(resistance_df, "red", "Resistance Levels Bounce Count", resistance_xticks)
+        return support_graph_url, resistance_graph_url, support_ranking, resistance_ranking
 
-    return support_graph_url, resistance_graph_url, support_ranking, resistance_ranking
+except:
+    message = "入力形式を誤っていませんか？"
+    print(message)
 
 # 📌 Webルート
 @app.route("/", methods=["GET", "POST"])
