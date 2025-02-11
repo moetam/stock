@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # 📌 グラフ生成関数（最適化）
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
-    # 株価データ取得
+    # 株価データ取得（最適化）
     stock = yf.Ticker(ticker)
     df = stock.history(period=period, interval=interval, auto_adjust=True)
 
@@ -33,46 +33,46 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
     resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
 
-    # **📌 上位5つの反発回数の価格リストを取得**
-    top5_support = support_df.nlargest(5, "Bounce_Count")
-    top5_resistance = resistance_df.nlargest(5, "Bounce_Count")
+    # 最大値取得
+    max_support_count = support_df["Bounce_Count"].max()
+    max_resistance_count = resistance_df["Bounce_Count"].max()
+    max_support_prices = support_df[support_df["Bounce_Count"] == max_support_count]["Price"].tolist()
+    max_resistance_prices = resistance_df[resistance_df["Bounce_Count"] == max_resistance_count]["Price"].tolist()
 
-    # **グラフ作成**
+    # **グラフ作成（最適化）**
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-    # 📌 **支持線のグラフ**
+    # 📌 支持線のグラフ
     ax = axes[0]
     ax.bar(support_df["Price"], support_df["Bounce_Count"], width=tick_size, color="green", alpha=0.7)
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Support Levels Bounce Count")
 
-    # **上位5つの反発価格を表示**
-    top5_text = "\n".join(f"{row.Price}: {row.Bounce_Count}" for _, row in top5_support.iterrows())
-    ax.text(support_df["Price"].min(), top5_support["Bounce_Count"].max(), f"Top 5:\n{top5_text}",
-            fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
+    # **X軸の目盛りを最適化**
+    step = max(len(support_levels) // 10, 1)
+    ax.set_xticks(support_levels[::step])
+    ax.set_xticklabels(support_levels[::step], rotation=90)
 
-    ax.set_xticks(support_levels[::max(len(support_levels) // 10, 1)])
-    ax.set_xticklabels(support_levels[::max(len(support_levels) // 10, 1)], rotation=90)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
+    ax.text(support_df["Price"].min(), max_support_count, f"Max: {max_support_count}\n" + "\n".join(map(str, max_support_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
-    # 📌 **抵抗線のグラフ**
+    # 📌 抵抗線のグラフ
     ax = axes[1]
     ax.bar(resistance_df["Price"], resistance_df["Bounce_Count"], width=tick_size, color="red", alpha=0.7)
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Resistance Levels Bounce Count")
 
-    # **上位5つの反発価格を表示**
-    top5_text = "\n".join(f"{row.Price}: {row.Bounce_Count}" for _, row in top5_resistance.iterrows())
-    ax.text(resistance_df["Price"].min(), top5_resistance["Bounce_Count"].max(), f"Top 5:\n{top5_text}",
-            fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
+    # **X軸の目盛りを最適化**
+    step = max(len(resistance_levels) // 10, 1)
+    ax.set_xticks(resistance_levels[::step])
+    ax.set_xticklabels(resistance_levels[::step], rotation=90)
 
-    ax.set_xticks(resistance_levels[::max(len(resistance_levels) // 10, 1)])
-    ax.set_xticklabels(resistance_levels[::max(len(resistance_levels) // 10, 1)], rotation=90)
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
+    ax.text(resistance_df["Price"].min(), max_resistance_count, f"Max: {max_resistance_count}\n" + "\n".join(map(str, max_resistance_prices)), fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
     # 画像をbase64エンコード
     img = io.BytesIO()
@@ -82,3 +82,22 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     graph_url = base64.b64encode(img.getvalue()).decode()
 
     return graph_url
+
+# 📌 Webルート
+@app.route("/", methods=["GET", "POST"])
+def index():
+    graph_url = None
+    if request.method == "POST":
+        ticker = request.form["ticker"]
+        period = request.form["period"]
+        interval = request.form["interval"]
+        support_range = (float(request.form["support_min"]), float(request.form["support_max"]))
+        resistance_range = (float(request.form["resistance_min"]), float(request.form["resistance_max"]))
+        tick_size = float(request.form["tick_size"])
+        threshold = int(request.form["threshold"])
+        graph_url = generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold)
+
+    return render_template("index.html", graph_url=graph_url)
+
+if __name__ == "__main__":
+    app.run(debug=True)
