@@ -49,8 +49,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
         ax.set_title(title)
 
         step = 50
-        ax.set_xticks(df["Price"][::step])
-        ax.set_xticklabels(df["Price"][::step], rotation=90)
+        ax.set_xticks(support_levels[::step])
+        ax.set_xticklabels(support_levels[::step], rotation=90)
 
         ax.grid(axis="y", linestyle="--", alpha=0.7)
         ax.set_yticks(np.arange(0, max(df["Bounce_Count"].max(), 1) + 1, 1))
