@@ -18,8 +18,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     df["High"] = (df["High"] / tick_size).round() * tick_size
     df["Low"] = (df["Low"] / tick_size).round() * tick_size
     df["Close"] = (df["Close"] / tick_size).round() * tick_size
-    df["is_bullish"] = df["Close"] > (df["Open"] - threshold)
-    df["is_bearish"] = (df["Close"] - threshold) < df["Open"]
+    # df["is_bullish"] = df["Close"] > (df["Open"] - threshold)
+    # df["is_bearish"] = (df["Close"] - threshold) < df["Open"]
 
     # 価格リスト
     support_levels = np.arange(support_range[0], support_range[1] + tick_size, tick_size)
