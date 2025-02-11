@@ -112,7 +112,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     # **グラフ生成関数（共通処理）**
     def create_graph(df, color, title, xticks):
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Price"], df["Bounce_Count"], width=0.5, color=color, alpha=0.7)
+        ax.bar(df["Price"], df["Bounce_Count"], width=1, color=color, alpha=0.7)
         ax.set_xlabel("Price Level (JPY)")
         ax.set_ylabel("Bounce Count")
         ax.set_title(title)
