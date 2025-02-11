@@ -29,6 +29,11 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     support_counts = {level: (df["Low"] == level).sum() for level in support_levels}
     resistance_counts = {level: (df["High"] == level).sum() for level in resistance_levels}
 
+    #x軸
+    step = 50
+    support_xticks = support_levels[::step]
+    resistance_xticks = resistance_levels[::step]
+
     # データフレーム化
     support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
     resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
@@ -41,16 +46,15 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     resistance_ranking = [{"count": count, "prices": resistance_df[resistance_df["Bounce_Count"] == count]["Price"].tolist()} for count in top5_resistance_counts]
 
     # **グラフ生成関数（共通処理）**
-    def create_graph(df, color, title):
+    def create_graph(df, color, title, xticks):
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.bar(df["Price"], df["Bounce_Count"], width=tick_size, color=color, alpha=0.7)
         ax.set_xlabel("Price Level (JPY)")
         ax.set_ylabel("Bounce Count")
         ax.set_title(title)
 
-        step = 50
-        ax.set_xticks(support_levels[::step])
-        ax.set_xticklabels(support_levels[::step], rotation=90)
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticks, rotation=90)
 
         ax.grid(axis="y", linestyle="--", alpha=0.7)
         ax.set_yticks(np.arange(0, max(df["Bounce_Count"].max(), 1) + 1, 1))
@@ -66,8 +70,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
         return graph_url
 
     # 📌 個別のグラフを生成
-    support_graph_url = create_graph(support_df, "green", "Support Levels Bounce Count")
-    resistance_graph_url = create_graph(resistance_df, "red", "Resistance Levels Bounce Count")
+    support_graph_url = create_graph(support_df, "green", "Support Levels Bounce Count", support_xticks)
+    resistance_graph_url = create_graph(resistance_df, "red", "Resistance Levels Bounce Count", resistance_xticks)
 
     return support_graph_url, resistance_graph_url, support_ranking, resistance_ranking
 
