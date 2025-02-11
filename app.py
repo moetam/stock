@@ -41,9 +41,9 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
         ax.set_ylabel("Bounce Count")
         ax.set_title(title)
 
-        # 📌 X軸の目目を min と max で 10 等分にする
+        # 📌 X軸の目盛りを 50 円ごとに設定
         min_price, max_price = df["Price"].min(), df["Price"].max()
-        xticks = np.linspace(min_price, max_price, num=10)  # 10等分のメモリを作成
+        xticks = np.arange(min_price, max_price + 1, 50)  # 50円ごと
         ax.set_xticks(xticks)
         ax.set_xticklabels([f"{x:.1f}" for x in xticks], rotation=90)
 
@@ -59,12 +59,6 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
         plt.close(fig)
 
         return graph_url
-
-    # 📌 個別のグラフを生成
-    support_graph_url = create_graph(support_df, "green", "Support Levels Bounce Count", tick_size)
-    resistance_graph_url = create_graph(resistance_df, "red", "Resistance Levels Bounce Count", tick_size)
-
-    return support_graph_url, resistance_graph_url
 
 # 📌 Webルート
 @app.route("/", methods=["GET", "POST"])
