@@ -55,9 +55,12 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数の価格を表示**
-    top5_text = "\n".join([f"{row['Price']}: {row['Bounce_Count']}" for _, row in top5_support.iterrows()])
-    ax.text(support_df["Price"].min(), support_df["Bounce_Count"].max(), f"Top 5:\n{top5_text}", 
+    # **上位5つの反発回数の価格を横に5列で表示**
+    top5_prices = [str(row["Price"]) for _, row in top5_support.iterrows()]
+    while len(top5_prices) < 5:
+        top5_prices.append(" ")  # 5つに満たない場合は空白で埋める
+    ax.text(support_df["Price"].min(), support_df["Bounce_Count"].max(), 
+            f"Top 5:\n{' | '.join(top5_prices)}", 
             fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
     # 📌 抵抗線のグラフ
@@ -75,9 +78,12 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数の価格を表示**
-    top5_text = "\n".join([f"{row['Price']}: {row['Bounce_Count']}" for _, row in top5_resistance.iterrows()])
-    ax.text(resistance_df["Price"].min(), resistance_df["Bounce_Count"].max(), f"Top 5:\n{top5_text}", 
+    # **上位5つの反発回数の価格を横に5列で表示**
+    top5_prices = [str(row["Price"]) for _, row in top5_resistance.iterrows()]
+    while len(top5_prices) < 5:
+        top5_prices.append(" ")  # 5つに満たない場合は空白で埋める
+    ax.text(resistance_df["Price"].min(), resistance_df["Bounce_Count"].max(), 
+            f"Top 5:\n{' | '.join(top5_prices)}", 
             fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
     # 画像をbase64エンコード
