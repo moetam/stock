@@ -18,8 +18,8 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     df["High"] = (df["High"] / tick_size).round() * tick_size
     df["Low"] = (df["Low"] / tick_size).round() * tick_size
     df["Close"] = (df["Close"] / tick_size).round() * tick_size
-    df["is_bullish"] = df["Close"] > df["Open"]
-    df["is_bearish"] = df["Close"] < df["Open"]
+    df["is_bullish"] = df["Close"] > (df["Open"] - threshold)
+    df["is_bearish"] = (df["Close"] - threshold) < df["Open"]
 
     # 価格リスト
     support_levels = np.arange(support_range[0], support_range[1] + tick_size, tick_size)
@@ -48,7 +48,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     # **グラフ生成関数（共通処理）**
     def create_graph(df, color, title, xticks):
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Price"], df["Bounce_Count"], width=tick_size, color=color, alpha=0.7)
+        ax.bar(df["Price"], df["Bounce_Count"], width=0.5, color=color, alpha=0.7)
         ax.set_xlabel("Price Level (JPY)")
         ax.set_ylabel("Bounce Count")
         ax.set_title(title)
