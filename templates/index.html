@@ -9,42 +9,34 @@
     <h1>株価反発分析ツール</h1>
     <form method="POST">
         <label>銘柄コード: <input type="text" name="ticker" value="{{ request.form.get('ticker', '3436.T') }}"></label><br>
-        
-        <label>期間: 
-            <select name="period">
-                {% for p in ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"] %}
-                    <option value="{{ p }}" {% if request.form.get('period', '5y') == p %}selected{% endif %}>{{ p }}</option>
-                {% endfor %}
-            </select>
-        </label><br>
-
-        <label>時間軸:
-            <select name="interval">
-                {% for i in ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1d", "5d", "1wk", "1mo", "3mo"] %}
-                    <option value="{{ i }}" {% if request.form.get('interval', '1wk') == i %}selected{% endif %}>{{ i }}</option>
-                {% endfor %}
-            </select>
-        </label><br>
-
-        <label>支持線: 
-            <input type="text" name="support_min" value="{{ request.form.get('support_min', '1700') }}"> 〜 
-            <input type="text" name="support_max" value="{{ request.form.get('support_max', '2000') }}">
-        </label><br>
-        
-        <label>抵抗線: 
-            <input type="text" name="resistance_min" value="{{ request.form.get('resistance_min', '2600') }}"> 〜 
-            <input type="text" name="resistance_max" value="{{ request.form.get('resistance_max', '2986') }}">
-        </label><br>
-        
+        <label>期間: <input type="text" name="period" value="{{ request.form.get('period', '5y') }}"></label><br>
+        <label>時間軸: <input type="text" name="interval" value="{{ request.form.get('interval', '1wk') }}"></label><br>
+        <label>支持線: <input type="text" name="support_min" value="{{ request.form.get('support_min', '1700') }}"> 〜 
+            <input type="text" name="support_max" value="{{ request.form.get('support_max', '2000') }}"></label><br>
+        <label>抵抗線: <input type="text" name="resistance_min" value="{{ request.form.get('resistance_min', '2600') }}"> 〜 
+            <input type="text" name="resistance_max" value="{{ request.form.get('resistance_max', '2986') }}"></label><br>
         <label>呼値: <input type="text" name="tick_size" value="{{ request.form.get('tick_size', '0.5') }}"></label><br>
         <label>閾値: <input type="text" name="threshold" value="{{ request.form.get('threshold', '15') }}"></label><br>
-        
         <button type="submit">実行</button>
     </form>
 
     {% if graph_url %}
         <h2>分析結果</h2>
         <img src="data:image/png;base64,{{ graph_url }}">
+
+        <h3>支持線ランキング</h3>
+        <ul>
+            {% for entry in support_ranking %}
+                <li>{{ entry.count }}回: {{ entry.prices | join(', ') }}</li>
+            {% endfor %}
+        </ul>
+
+        <h3>抵抗線ランキング</h3>
+        <ul>
+            {% for entry in resistance_ranking %}
+                <li>{{ entry.count }}回: {{ entry.prices | join(', ') }}</li>
+            {% endfor %}
+        </ul>
     {% endif %}
 </body>
 </html>
