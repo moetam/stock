@@ -49,8 +49,7 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Support Levels Bounce Count")
-
-    # **X軸の目盛りを最適化**
+    
     step = max(len(support_levels) // 10, 1)
     ax.set_xticks(support_levels[::step])
     ax.set_xticklabels(support_levels[::step], rotation=90)
@@ -58,19 +57,13 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数と価格を5列で表示**
-    support_text = "\n".join([f"{count}: {', '.join(map(str, prices))}" for count, prices in zip(top5_support_counts, top5_support_prices)])
-    ax.text(support_df["Price"].min(), support_df["Bounce_Count"].max(), f"Top 5:\n{support_text}", 
-            fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
-
     # 📌 抵抗線のグラフ
     ax = axes[1]
     ax.bar(resistance_df["Price"], resistance_df["Bounce_Count"], width=tick_size, color="red", alpha=0.7)
     ax.set_xlabel("Price Level (JPY)")
     ax.set_ylabel("Bounce Count")
     ax.set_title("Resistance Levels Bounce Count")
-
-    # **X軸の目盛りを最適化**
+    
     step = max(len(resistance_levels) // 10, 1)
     ax.set_xticks(resistance_levels[::step])
     ax.set_xticklabels(resistance_levels[::step], rotation=90)
@@ -78,24 +71,26 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数と価格を5列で表示**
-    resistance_text = "\n".join([f"{count}: {', '.join(map(str, prices))}" for count, prices in zip(top5_resistance_counts, top5_resistance_prices)])
-    ax.text(resistance_df["Price"].min(), resistance_df["Bounce_Count"].max(), f"Top 5:\n{resistance_text}", 
-            fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
-
-    # 画像をbase64エンコード
+    # **画像をbase64エンコード**
     img = io.BytesIO()
     plt.tight_layout()
     plt.savefig(img, format="png")
     img.seek(0)
     graph_url = base64.b64encode(img.getvalue()).decode()
 
-    return graph_url
+    # **ランキング用データ**
+    support_ranking = [{"count": count, "prices": prices} for count, prices in zip(top5_support_counts, top5_support_prices)]
+    resistance_ranking = [{"count": count, "prices": prices} for count, prices in zip(top5_resistance_counts, top5_resistance_prices)]
+
+    return graph_url, support_ranking, resistance_ranking
 
 # 📌 Webルート
 @app.route("/", methods=["GET", "POST"])
 def index():
     graph_url = None
+    support_ranking = []
+    resistance_ranking = []
+
     if request.method == "POST":
         ticker = request.form["ticker"]
         period = request.form["period"]
@@ -104,9 +99,9 @@ def index():
         resistance_range = (float(request.form["resistance_min"]), float(request.form["resistance_max"]))
         tick_size = float(request.form["tick_size"])
         threshold = int(request.form["threshold"])
-        graph_url = generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold)
+        graph_url, support_ranking, resistance_ranking = generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold)
 
-    return render_template("index.html", graph_url=graph_url)
+    return render_template("index.html", graph_url=graph_url, support_ranking=support_ranking, resistance_ranking=resistance_ranking)
 
 if __name__ == "__main__":
     app.run(debug=True)
