@@ -33,26 +33,36 @@
         <button type="submit">実行</button>
     </form>
 
-    {% if support_graph_url and resistance_graph_url %}
-        <h2>支持線グラフ</h2>
-        <img src="data:image/png;base64,{{ support_graph_url }}">
+    {% if support_rankings %}
+    <h2>支持線ランキング</h2>
+    <table border="1">
+        <tr>
+            <th>反発回数</th>
+            <th>価格リスト</th>
+        </tr>
+        {% for rank in support_rankings %}
+            <tr>
+                <td>{{ rank.count }}</td>
+                <td>{{ ", ".join(rank.prices) }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
 
-        <h3>支持線ランキング</h3>
-        <ul>
-            {% for entry in support_ranking %}
-                <li>{{ entry.count }}回: {{ entry.prices | join(', ') }}</li>
-            {% endfor %}
-        </ul>
-
-        <h2>抵抗線グラフ</h2>
-        <img src="data:image/png;base64,{{ resistance_graph_url }}">
-
-        <h3>抵抗線ランキング</h3>
-        <ul>
-            {% for entry in resistance_ranking %}
-                <li>{{ entry.count }}回: {{ entry.prices | join(', ') }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% if resistance_rankings %}
+    <h2>抵抗線ランキング</h2>
+    <table border="1">
+        <tr>
+            <th>反発回数</th>
+            <th>価格リスト</th>
+        </tr>
+        {% for rank in resistance_rankings %}
+            <tr>
+                <td>{{ rank.count }}</td>
+                <td>{{ ", ".join(rank.prices) }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
 </body>
 </html>
