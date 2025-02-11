@@ -8,7 +8,7 @@ import base64
 
 app = Flask(__name__)
 
-# 📌 グラフ生成関数（最適化）
+# 📌 グラフ生成関数
 def generate_chart(ticker, period, interval, support_range, resistance_range, tick_size, threshold):
     # 株価データ取得
     stock = yf.Ticker(ticker)
@@ -33,12 +33,15 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     support_df = pd.DataFrame(list(support_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
     resistance_df = pd.DataFrame(list(resistance_counts.items()), columns=["Price", "Bounce_Count"]).sort_values(by="Bounce_Count", ascending=False)
 
-    # **上位5つの反発回数を取得**
-    top5_support = support_df.head(5)
-    top5_resistance = resistance_df.head(5)
+    # **上位5つの反発回数と、それに該当する価格を取得**
+    top5_support_counts = support_df["Bounce_Count"].unique()[:5]
+    top5_resistance_counts = resistance_df["Bounce_Count"].unique()[:5]
+
+    top5_support_prices = [support_df[support_df["Bounce_Count"] == count]["Price"].tolist() for count in top5_support_counts]
+    top5_resistance_prices = [resistance_df[resistance_df["Bounce_Count"] == count]["Price"].tolist() for count in top5_resistance_counts]
 
     # **グラフ作成**
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8))
 
     # 📌 支持線のグラフ
     ax = axes[0]
@@ -55,12 +58,9 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(support_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数の価格を横に5列で表示**
-    top5_prices = [str(row["Price"]) for _, row in top5_support.iterrows()]
-    while len(top5_prices) < 5:
-        top5_prices.append(" ")  # 5つに満たない場合は空白で埋める
-    ax.text(support_df["Price"].min(), support_df["Bounce_Count"].max(), 
-            f"Top 5:\n{' | '.join(top5_prices)}", 
+    # **上位5つの反発回数と価格を5列で表示**
+    support_text = "\n".join([f"{count}: {', '.join(map(str, prices))}" for count, prices in zip(top5_support_counts, top5_support_prices)])
+    ax.text(support_df["Price"].min(), support_df["Bounce_Count"].max(), f"Top 5:\n{support_text}", 
             fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
     # 📌 抵抗線のグラフ
@@ -78,12 +78,9 @@ def generate_chart(ticker, period, interval, support_range, resistance_range, ti
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     ax.set_yticks(np.arange(0, max(resistance_df["Bounce_Count"].max(), 1) + 1, 1))
 
-    # **上位5つの反発回数の価格を横に5列で表示**
-    top5_prices = [str(row["Price"]) for _, row in top5_resistance.iterrows()]
-    while len(top5_prices) < 5:
-        top5_prices.append(" ")  # 5つに満たない場合は空白で埋める
-    ax.text(resistance_df["Price"].min(), resistance_df["Bounce_Count"].max(), 
-            f"Top 5:\n{' | '.join(top5_prices)}", 
+    # **上位5つの反発回数と価格を5列で表示**
+    resistance_text = "\n".join([f"{count}: {', '.join(map(str, prices))}" for count, prices in zip(top5_resistance_counts, top5_resistance_prices)])
+    ax.text(resistance_df["Price"].min(), resistance_df["Bounce_Count"].max(), f"Top 5:\n{resistance_text}", 
             fontsize=10, bbox=dict(facecolor="white", alpha=0.8))
 
     # 画像をbase64エンコード
