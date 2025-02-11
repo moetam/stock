@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 #入力値の検証
 @app.route("/", methods=["GET", "POST"])
-def index():
+def check():
     support_graph_url = None
     resistance_graph_url = None
     support_ranking = []
